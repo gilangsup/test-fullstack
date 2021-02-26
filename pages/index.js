@@ -1,65 +1,161 @@
-import Head from 'next/head'
-import styles from '../styles/Home.module.css'
+import React, { useState, useEffect } from "react";
+import Head from "next/head";
+import styles from "../styles/Home.module.css";
+import productList from "../mock/productList";
+import ProductCard from "../component/card/ProductCard";
+import axios from "axios";
+import ImageUploading from "react-images-uploading";
 
 export default function Home() {
+  const [list, setList] = useState([]);
+  const [productCode, setProductCode] = useState("");
+  const [productName, setproductName] = useState("");
+  const [productPrice, setproductPrice] = useState("");
+  const [productQuantity, setproductQuantity] = useState("");
+  const [productImage, setProductImage] = useState("");
+
+  const maxNumber = 69;
+
+  const getAPI = async () => {
+    const result = await axios("http://localhost:3000/products");
+    setList(result.data);
+  };
+
+  useEffect(async () => {
+    getAPI();
+  }, []);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const payload = {
+      id: Math.floor(Math.random() * 99999 + 1),
+      sku: productCode,
+      name: productName,
+      price: productPrice,
+      qty: productQuantity,
+      image: productImage
+    };
+    console.log(payload);
+    axios.post(`http://localhost:3000/products`, payload).then((resp) => {
+      if (resp.status === 201) {
+          setproductQuantity(""),
+          setProductCode(""),
+          setproductName(""),
+          setproductPrice(""),
+          setProductImage("")
+      }
+    });
+  };
+
+  const formValidator = () => {
+    if (
+      productName !== "" &&
+      productQuantity !== "" &&
+      productCode !== "" &&
+      productPrice !== "" &&
+      productImage !== ""
+    )
+      return false;
+    return true;
+  };
+
+  const handleRemove = (id) => {
+    console.log(id);
+    axios.delete(`http://localhost:3000/products/${id}`);
+    getAPI();
+  };
+
   return (
-    <div className={styles.container}>
-      <Head>
-        <title>Create Next App</title>
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
-
-      <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
-
-        <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>pages/index.js</code>
-        </p>
-
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h3>Documentation &rarr;</h3>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
-
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h3>Learn &rarr;</h3>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/master/examples"
-            className={styles.card}
-          >
-            <h3>Examples &rarr;</h3>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-          >
-            <h3>Deploy &rarr;</h3>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
-        </div>
-      </main>
-
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <img src="/vercel.svg" alt="Vercel Logo" className={styles.logo} />
-        </a>
-      </footer>
+    <div>
+      <h1>List product</h1>
+      <div className={styles.form}>
+        <form onSubmit={handleSubmit}>
+          <div>
+            <p>Kode Barang</p>
+            <input
+              type="text"
+              name="sku"
+              value={productCode}
+              onChange={(e) => setProductCode(e.target.value)}
+            />
+          </div>
+          <div>
+            <p>Nama Barang</p>
+            <input
+              type="text"
+              name="name"
+              value={productName}
+              onChange={(e) => setproductName(e.target.value)}
+            />
+          </div>
+          <div>
+            <p>Harga Barang</p>
+            <input
+              type="text"
+              name="price"
+              value={productPrice}
+              onChange={(e) => setproductPrice(e.target.value)}
+            />
+          </div>
+          <div>
+            <p>Quantity</p>
+            <input
+              type="number"
+              name="qty"
+              value={productQuantity}
+              onChange={(e) => setproductQuantity(e.target.value)}
+            />
+          </div>
+          <div>
+            <p>Image Barang</p>
+            <ImageUploading 
+              value={productImage}
+              maxNumber={maxNumber}
+              onChange={(imageList, addUpdateIndex) => setProductImage(imageList)}
+              dataURLKey="data_url"
+            >{({
+              imageList,
+              onImageUpload,
+              onImageRemoveAll,
+              onImageUpdate,
+              onImageRemove,
+              isDragging,
+              dragProps,
+            }) => (
+              // write your building UI
+              <div className="upload__image-wrapper">
+                <button
+                  style={isDragging ? { color: 'red' } : undefined}
+                  onClick={onImageUpload}
+                  {...dragProps}
+                >
+                  Click or Drop here
+                </button>
+                &nbsp;
+                {imageList.map((image, index) => (
+                  <div key={index} className="image-item">
+                    <img src={image['data_url']} alt="" width="100" />
+                    <div className="image-item__btn-wrapper">
+                      <button onClick={() => onImageRemove(index)}>Remove</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </ImageUploading>
+          </div>
+          <button disabled={formValidator()} type="submit">
+            Add Product
+          </button>
+        </form>
+      </div>
+      <div className={styles.product}>
+        {list.map((listed, index) => {
+          return (
+            <ProductCard {...listed} key={index} handleRemove={handleRemove} />
+          );
+        })}
+      </div>
     </div>
-  )
+  );
 }
